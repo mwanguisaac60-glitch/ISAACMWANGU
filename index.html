@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ATENDAE MEMA ASTAHILI HESHIMA - Beni Kuka</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-btn.active {
+            background-color: #0f172a;
+            color: #ffffff;
+            border-bottom: 3px solid #10b981;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #section-facture, #section-facture * { visibility: visible; }
+            #section-facture { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col select-none">
+
+    <!-- ÉCRAN DE CONNEXION / SÉCURITÉ -->
+    <div id="ecran-connexion" class="fixed inset-0 bg-slate-900 text-white z-[100] flex items-center justify-center p-4">
+        <div class="bg-slate-800 p-6 rounded-3xl max-w-sm w-full shadow-2xl border border-slate-700 text-center">
+            <div class="bg-emerald-500 text-slate-900 w-16 h-16 rounded-2xl font-black text-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                AMH
+            </div>
+            <h2 class="text-lg font-black text-amber-400 uppercase tracking-wide">ATENDAE MEMA ASTAHILI HESHIMA</h2>
+            <p class="text-xs text-slate-400 mb-6 font-medium">📍 Beni / Kuka - Accès Protégé</p>
+
+            <form id="form-login" class="space-y-4">
+                <div>
+                    <label class="block text-left text-xs font-bold text-slate-300 mb-1">Code d'accès / Mot de passe</label>
+                    <input type="password" id="input-code" placeholder="Entrez le code d'accès" required class="w-full border border-slate-600 rounded-xl p-3 text-sm bg-slate-900 text-white text-center font-bold tracking-widest focus:border-emerald-500 outline-none">
+                </div>
+                <p id="msg-erreur-code" class="text-xs font-bold text-rose-500 hidden">⚠️ Code incorrect ! Veuillez réessayez.</p>
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-extrabold py-3 rounded-xl text-sm shadow-lg transition">🔑 Se Connecter</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- CONTENU APPLICATION -->
+    <div id="app-contenu" class="hidden min-h-screen flex flex-col">
+
+        <!-- EN-TÊTE PRINCIPAL -->
+        <header class="no-print bg-slate-900 text-white shadow-lg border-b-4 border-emerald-500 sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="bg-emerald-500 text-slate-900 p-2 rounded-xl font-black text-xl tracking-tighter">AMH</div>
+                    <div>
+                        <h1 class="text-base sm:text-lg font-black tracking-wide text-amber-400 uppercase">ATENDAE MEMA ASTAHILI HESHIMA</h1>
+                        <p class="text-[10px] sm:text-xs text-slate-400 font-medium">📍 Beni - Kuka | Gestion Commerciale & Stock</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="deconnexion()" class="bg-rose-900 hover:bg-rose-800 text-rose-200 text-xs px-2.5 py-1.5 rounded-lg border border-rose-700 font-bold flex items-center gap-1 transition">
+                        🔒 Déconnexion
+                    </button>
+                    <button onclick="exporterDonnees()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 font-semibold flex items-center gap-1 transition">
+                        💾 Sauvegarder
+                    </button>
+                    <div class="bg-slate-800 px-3 py-1 rounded-xl border border-slate-700 text-right">
+                        <span class="block text-[9px] text-slate-400 font-bold uppercase">Caisse Net</span>
+                        <span id="header-caisse" class="text-base sm:text-lg font-black text-emerald-400">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ALERTE STOCK BAS -->
+        <div id="zone-alerte-stock" class="no-print hidden bg-rose-600 text-white px-4 py-2 text-xs font-bold shadow-inner">
+            <div class="max-w-7xl mx-auto flex items-center justify-between">
+                <span class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                    ⚠️ ATTENTION : Des articles sont en rupture proche (Moins de 5 unités restantes) !
+                </span>
+                <button onclick="changerOnglet('stock')" class="underline bg-rose-800 px-2 py-1 rounded text-[10px] hover:bg-rose-900">Voir Stock</button>
+            </div>
+        </div>
+
+        <!-- BARRE DE NAVIGATION MOBILE (ONGLETS DÉFILANTS) -->
+        <nav class="no-print bg-white border-b border-slate-200 shadow-sm sticky top-[58px] z-40">
+            <div class="max-w-7xl mx-auto flex overflow-x-auto text-xs font-bold text-slate-600 scrollbar-none">
+                <button onclick="changerOnglet('dashboard')" id="btn-tab-dashboard" class="tab-btn active px-4 py-3 whitespace-nowrap">
+                    📊 Tableau de Bord
+                </button>
+                <button onclick="changerOnglet('ventes')" id="btn-tab-ventes" class="tab-btn px-4 py-3 whitespace-nowrap">
+                    🛒 Ventes
+                </button>
+                <button onclick="changerOnglet('stock')" id="btn-tab-stock" class="tab-btn px-4 py-3 whitespace-nowrap">
+                    📦 Stock
+                </button>
+                <button onclick="changerOnglet('dettes')" id="btn-tab-dettes" class="tab-btn px-4 py-3 whitespace-nowrap">
+                    🔴 Dettes
+                </button>
+                <button onclick="changerOnglet('acomptes')" id="btn-tab-acomptes" class="tab-btn px-4 py-3 whitespace-nowrap">
+                    🤝 Acomptes
+                </button>
+                <button onclick="changerOnglet('caisse')" id="btn-tab-caisse" class="tab-btn px-4 py-3 whitespace-nowrap">
+                    💵 Caisse
+                </button>
+                <button onclick="changerOnglet('rapport')" id="btn-tab-rapport" class="tab-btn px-4 py-3 whitespace-nowrap">
+                    📋 Rapport
+                </button>
+            </div>
+        </nav>
+
+        <!-- CONTENU PRINCIPAL -->
+        <main class="max-w-7xl mx-auto p-3 sm:p-5 flex-grow w-full">
+
+            <!-- RECHERCHE UNIVERSELLE -->
+            <div class="no-print mb-4 bg-white p-2.5 rounded-xl shadow-sm border border-slate-200 flex items-center gap-2">
+                <span class="text-slate-400">🔍</span>
+                <input type="text" id="filtre-recherche" oninput="filtrerTableaux()" placeholder="Recherche rapide..." class="w-full text-xs sm:text-sm outline-none bg-transparent">
+            </div>
+
+            <!-- ================= ONGLET 0 : TABLEAU DE BORD (DASHBOARD) ================= -->
+            <div id="onglet-dashboard" class="onglet-contenu space-y-4">
+                <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <div>
+                        <h2 class="text-sm font-black text-slate-800 uppercase">Aperçu Général des Activités</h2>
+                        <p class="text-[11px] text-slate-500">Quincaillerie ATENDAE MEMA ASTAHILI HESHIMA (Beni / Kuka)</p>
+                    </div>
+                    <span class="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-3 py-1 rounded-full">En Direct</span>
+                </div>
+
+                <!-- CARTES DES KPI -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-4 rounded-2xl shadow-sm relative overflow-hidden">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase block mb-1">Caisse Net Disponible</span>
+                        <span id="dash-caisse" class="text-lg sm:text-2xl font-black text-emerald-400">0.00</span>
+                        <div class="text-[10px] text-slate-400 mt-2">Paiements & Encaissements</div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Total Ventes Réalisées</span>
+                        <span id="dash-ventes-total" class="text-lg sm:text-2xl font-black text-slate-900">0.00</span>
+                        <div class="text-[10px] text-emerald-600 font-bold mt-2">Cash Recouvré: <span id="dash-ventes-cash">0.00</span></div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <span class="text-[10px] text-rose-600 font-bold uppercase block mb-1">Dettes Clients non Payées</span>
+                        <span id="dash-dettes" class="text-lg sm:text-2xl font-black text-rose-600">0.00</span>
+                        <div class="text-[10px] text-slate-500 mt-2"><span id="dash-nb-dettes">0</span> client(s) endetté(s)</div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Valeur Totale Stock</span>
+                        <span id="dash-valeur-stock" class="text-lg sm:text-2xl font-black text-blue-600">0.00</span>
+                        <div class="text-[10px] text-amber-600 font-bold mt-2"><span id="dash-nb-alertes">0</span> article(s) sous alerte</div>
+                    </div>
+                </div>
+
+                <!-- SECTIONS RÉSUMÉS RAPIDES -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="text-xs font-black text-slate-800 uppercase mb-3 border-b pb-2">🛒 Dernières Ventes Enregistrées</h3>
+                        <div id="dash-recent-ventes" class="space-y-2 text-xs"></div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="text-xs font-black text-rose-700 uppercase mb-3 border-b pb-2">⚠️ Articles en Rupture Proche (&lt; 5 Unités)</h3>
+                        <div id="dash-recent-alertes" class="space-y-2 text-xs"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= ONGLET 1 : VENTES ================= -->
+            <div id="onglet-ventes" class="onglet-contenu hidden space-y-4">
+                <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-xs font-extrabold text-slate-800 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Enregistrer une Nouvelle Vente
+                    </h2>
+                    <form id="form-vente" class="space-y-3">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Date</label>
+                                <input type="date" id="v-date" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Marchandise</label>
+                                <input type="text" id="v-article" placeholder="Article" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Quantité</label>
+                                <input type="number" id="v-qte" min="1" placeholder="Qté" required class="w-full border rounded-xl p-2 text-xs bg-slate-50" oninput="calculerVente()">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Prix Unitaire</label>
+                                <input type="number" step="0.01" id="v-pu" placeholder="P.U." required class="w-full border rounded-xl p-2 text-xs bg-slate-50" oninput="calculerVente()">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Montant Payé</label>
+                                <input type="number" step="0.01" id="v-paye" placeholder="Payé" class="w-full border rounded-xl p-2 text-xs bg-slate-50" oninput="calculerVente()">
+                            </div>
+                            <div class="col-span-2 sm:col-span-1">
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Nom Client</label>
+                                <input type="text" id="v-client" placeholder="Client" class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900 text-white p-3 rounded-xl flex items-center justify-between gap-2 shadow-sm">
+                            <div class="flex gap-4 text-xs">
+                                <div><span class="text-[9px] text-slate-400 font-bold block uppercase">Total</span> <span id="v-calc-total" class="font-black text-amber-400 text-sm">0.00</span></div>
+                                <div><span class="text-[9px] text-slate-400 font-bold block uppercase">Dette</span> <span id="v-calc-dette" class="font-black text-rose-400 text-sm">0.00</span></div>
+                            </div>
+                            <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-extrabold px-4 py-2 rounded-xl text-xs transition shadow">Valider & Facture</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-3 bg-slate-50 border-b font-extrabold text-xs text-slate-700">Historique Ventes</div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-500 font-bold uppercase text-[9px]">
+                                <tr>
+                                    <th class="p-2.5">Date</th>
+                                    <th class="p-2.5">Article</th>
+                                    <th class="p-2.5">Qté</th>
+                                    <th class="p-2.5">P.U.</th>
+                                    <th class="p-2.5">Total</th>
+                                    <th class="p-2.5">Payé</th>
+                                    <th class="p-2.5">Dette</th>
+                                    <th class="p-2.5">Client</th>
+                                    <th class="p-2.5 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-ventes" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= ONGLET 2 : STOCK ================= -->
+            <div id="onglet-stock" class="onglet-contenu hidden space-y-4">
+                <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-xs font-extrabold text-slate-800 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Entrée de Stock / Nouveau Produit
+                    </h2>
+                    <form id="form-stock" class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Date d'Entrée</label>
+                            <input type="date" id="s-date" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Article</label>
+                            <input type="text" id="s-nom" placeholder="Article" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Quantité Entrante</label>
+                            <input type="number" id="s-qte" min="1" placeholder="Qté" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Prix Vente</label>
+                            <input type="number" step="0.01" id="s-pv" placeholder="P.V." required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1 flex items-end">
+                            <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold p-2 rounded-xl text-xs shadow transition">+ Ajouter au Stock</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-3 bg-slate-50 border-b font-extrabold text-xs text-slate-700">Stock Disponible</div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-500 font-bold uppercase text-[9px]">
+                                <tr>
+                                    <th class="p-2.5">Date Entrée</th>
+                                    <th class="p-2.5">Article</th>
+                                    <th class="p-2.5">Stock Restant</th>
+                                    <th class="p-2.5">Prix Vente</th>
+                                    <th class="p-2.5">Valeur Stock</th>
+                                    <th class="p-2.5">Statut</th>
+                                    <th class="p-2.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-stock" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= ONGLET 3 : DETTES CLIENTS ================= -->
+            <div id="onglet-dettes" class="onglet-contenu hidden space-y-4">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-3 bg-rose-900 text-white font-extrabold text-xs flex justify-between items-center">
+                        <span>🔴 Dettes & Crédits Clients</span>
+                        <span id="badge-total-dettes" class="bg-rose-800 px-2.5 py-0.5 rounded-full text-xs font-black">0.00</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-rose-50 text-rose-900 font-bold uppercase text-[9px]">
+                                <tr>
+                                    <th class="p-2.5">Date</th>
+                                    <th class="p-2.5">Client</th>
+                                    <th class="p-2.5">Article</th>
+                                    <th class="p-2.5">Total</th>
+                                    <th class="p-2.5">Payé</th>
+                                    <th class="p-2.5">Dette Restante</th>
+                                    <th class="p-2.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-dettes" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= ONGLET 4 : ACOMPTES & RETRAITS ================= -->
+            <div id="onglet-acomptes" class="onglet-contenu hidden space-y-4">
+                <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-xs font-extrabold text-amber-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        Saisie Acompte / Retrait Marchandise
+                    </h2>
+                    <form id="form-acompte" class="space-y-3">
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Date</label>
+                                <input type="date" id="ac-date" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Client</label>
+                                <input type="text" id="ac-client" placeholder="Client" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Marchandise</label>
+                                <input type="text" id="ac-article" placeholder="Article" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Qté Payée</label>
+                                <input type="number" id="ac-qte-totale" min="1" placeholder="Qté" required class="w-full border rounded-xl p-2 text-xs bg-slate-50" oninput="calculerAcompte()">
+                            </div>
+                            <div class="col-span-2 sm:col-span-1">
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Qté Retirée</label>
+                                <input type="number" id="ac-qte-retiree" min="0" value="0" required class="w-full border rounded-xl p-2 text-xs bg-slate-50" oninput="calculerAcompte()">
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                            <span class="text-xs font-bold text-amber-900">RESTE À RETIRER : <span id="ac-calc-reste" class="text-sm font-black">0</span></span>
+                            <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-4 py-1.5 rounded-xl text-xs shadow transition">Enregistrer Fiche</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-3 bg-slate-50 border-b font-extrabold text-xs text-slate-700">Fiches Acomptes & Retraits</div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-500 font-bold uppercase text-[9px]">
+                                <tr>
+                                    <th class="p-2.5">Date</th>
+                                    <th class="p-2.5">Client</th>
+                                    <th class="p-2.5">Marchandise</th>
+                                    <th class="p-2.5">Qté Payée</th>
+                                    <th class="p-2.5">Qté Retirée</th>
+                                    <th class="p-2.5">Reste à Retirer</th>
+                                    <th class="p-2.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-acomptes" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= ONGLET 5 : CAISSE & DEPENSES ================= -->
+            <div id="onglet-caisse" class="onglet-contenu hidden space-y-4">
+                <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-xs font-extrabold text-purple-800 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-purple-600"></span>
+                        Mouvements de Caisse (Dépenses / Entrées)
+                    </h2>
+                    <form id="form-caisse" class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Date</label>
+                            <input type="date" id="c-date" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Type</label>
+                            <select id="c-type" class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                                <option value="Sortie">Dépense / Sortie</option>
+                                <option value="Entree">Entrée Diver</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Montant</label>
+                            <input type="number" step="0.01" id="c-montant" placeholder="Montant" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Motif</label>
+                            <input type="text" id="c-motif" placeholder="Raison" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1 flex items-end">
+                            <button type="submit" class="w-full bg-purple-800 hover:bg-purple-900 text-white font-extrabold p-2 rounded-xl text-xs shadow transition">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-3 bg-slate-50 border-b font-extrabold text-xs text-slate-700">Mouvements de Caisse</div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-500 font-bold uppercase text-[9px]">
+                                <tr>
+                                    <th class="p-2.5">Date</th>
+                                    <th class="p-2.5">Type</th>
+                                    <th class="p-2.5">Motif</th>
+                                    <th class="p-2.5">Montant</th>
+                                    <th class="p-2.5 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-caisse" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= ONGLET 6 : RAPPORT JOURNALIER ================= -->
+            <div id="onglet-rapport" class="onglet-contenu hidden space-y-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex flex-wrap justify-between items-center border-b pb-3 mb-3 gap-2">
+                        <div>
+                            <h2 class="text-base font-black text-slate-900 uppercase">RAPPORT GLOBAL D'ACTIVITÉ</h2>
+                            <p class="text-[10px] text-slate-500">ATENDAE MEMA ASTAHILI HESHIMA - Beni / Kuka</p>
+                        </div>
+                        <button onclick="window.print()" class="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-xl text-xs font-extrabold transition shadow">🖨️ Imprimer Rapport</button>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-4">
+                        <div class="bg-emerald-50 p-3 rounded-2xl border border-emerald-200 text-center">
+                            <span class="text-[9px] text-emerald-800 font-bold uppercase block">Ventes Recouvrées (Cash)</span>
+                            <span id="rap-ventes" class="text-base sm:text-xl font-black text-emerald-600">0.00</span>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-2xl border border-blue-200 text-center">
+                            <span class="text-[9px] text-blue-800 font-bold uppercase block">Autres Entrées</span>
+                            <span id="rap-entrees" class="text-base sm:text-xl font-black text-blue-600">0.00</span>
+                        </div>
+                        <div class="bg-rose-50 p-3 rounded-2xl border border-rose-200 text-center">
+                            <span class="text-[9px] text-rose-800 font-bold uppercase block">Dépenses Caisse</span>
+                            <span id="rap-sorties" class="text-base sm:text-xl font-black text-rose-600">0.00</span>
+                        </div>
+                        <div class="bg-amber-50 p-3 rounded-2xl border border-amber-200 text-center">
+                            <span class="text-[9px] text-amber-800 font-bold uppercase block">Crédits Accordés (Dettes)</span>
+                            <span id="rap-dettes" class="text-base sm:text-xl font-black text-amber-600">0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 text-white p-3.5 rounded-2xl flex justify-between items-center mb-4 shadow">
+                        <span class="text-xs font-extrabold uppercase">SOLDE NET EN CAISSE :</span>
+                        <span id="rap-solde-net" class="text-lg sm:text-2xl font-black text-emerald-400">0.00</span>
+                    </div>
+
+                    <div class="border rounded-2xl p-3 bg-slate-50 border-slate-200">
+                        <h3 class="font-extrabold text-xs text-slate-800 mb-2 uppercase">Acomptes & Retraits En Attente</h3>
+                        <div id="rap-zone-acomptes" class="text-xs space-y-1"></div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- FACTURE AUTOMATIQUE MODALE -->
+        <div id="modal-facture" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-50">
+            <div class="bg-white p-5 rounded-2xl max-w-sm w-full shadow-2xl relative border border-slate-200" id="section-facture">
+                <div class="text-center border-b pb-3 mb-3">
+                    <h3 class="font-black text-base text-slate-900 uppercase">ATENDAE MEMA ASTAHILI HESHIMA</h3>
+                    <p class="text-[10px] text-slate-500 font-medium">📍 Adresse: Beni / Kuka</p>
+                    <div class="bg-slate-100 text-slate-700 font-bold text-[10px] py-0.5 px-2 rounded mt-1 inline-block">
+                        FACTURE N° #<span id="fact-num"></span>
+                    </div>
+                </div>
+
+                <div class="text-xs space-y-1 mb-3 text-slate-700">
+                    <div class="flex justify-between"><span>Date:</span> <strong id="fact-date"></strong></div>
+                    <div class="flex justify-between"><span>Client:</span> <strong id="fact-client"></strong></div>
+                    <div class="flex justify-between"><span>Article:</span> <strong id="fact-article"></strong></div>
+                    <div class="flex justify-between"><span>Quantité:</span> <strong id="fact-qte"></strong></div>
+                    <div class="flex justify-between"><span>P.U.:</span> <strong id="fact-pu"></strong></div>
+                </div>
+
+                <div class="border-t border-b py-2 my-2 text-xs space-y-1 bg-slate-50 px-2 rounded">
+                    <div class="flex justify-between font-bold text-slate-900">
+                        <span>TOTAL :</span>
+                        <span id="fact-total"></span>
+                    </div>
+                    <div class="flex justify-between text-emerald-600 font-bold">
+                        <span>PAYÉ :</span>
+                        <span id="fact-paye"></span>
+                    </div>
+                    <div class="flex justify-between text-rose-600 font-bold">
+                        <span>DETTE :</span>
+                        <span id="fact-dette"></span>
+                    </div>
+                </div>
+
+                <p class="text-[10px] text-center text-slate-400 my-2">Merci pour votre confiance !</p>
+
+                <div class="no-print flex gap-2 mt-3">
+                    <button onclick="window.print()" class="w-full bg-slate-900 text-white py-2 rounded-xl text-xs font-extrabold shadow">🖨️ Imprimer</button>
+                    <button onclick="fermerFacture()" class="w-full bg-slate-200 text-slate-800 py-2 rounded-xl text-xs font-bold">Fermer</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODALE MODIFIER / PAYER DETTE -->
+        <div id="modal-dette" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-50">
+            <div class="bg-white p-5 rounded-2xl max-w-sm w-full shadow-2xl relative border border-slate-200">
+                <h3 class="font-extrabold text-xs text-slate-900 uppercase border-b pb-2 mb-3">✏️ Modifier / Rembourser la Dette</h3>
+                <p class="text-xs text-slate-600 mb-1"><strong>Client :</strong> <span id="mod-dette-client"></span></p>
+                <p class="text-xs text-slate-600 mb-3"><strong>Article :</strong> <span id="mod-dette-article"></span></p>
+
+                <form id="form-remboursement-dette" class="space-y-3">
+                    <input type="hidden" id="mod-dette-id">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Dette Actuelle</label>
+                        <input type="text" id="mod-dette-actuelle" disabled class="w-full border rounded-xl p-2 text-xs font-bold bg-slate-100 text-rose-600">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Montant Payé Maintenant</label>
+                        <input type="number" step="0.01" id="mod-dette-montant-paye" placeholder="Montant versé" required class="w-full border border-slate-300 rounded-xl p-2 text-xs font-bold bg-slate-50 focus:bg-white outline-none">
+                    </div>
+                    <div class="flex gap-2 pt-1">
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl text-xs font-extrabold shadow">Valider Paiement</button>
+                        <button type="button" onclick="fermerModalDette()" class="w-full bg-slate-200 text-slate-800 py-2 rounded-xl text-xs font-bold">Annuler</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODALE MODIFIER STOCK -->
+        <div id="modal-stock" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-50">
+            <div class="bg-white p-5 rounded-2xl max-w-sm w-full shadow-2xl relative border border-slate-200">
+                <h3 class="font-extrabold text-xs text-slate-900 uppercase border-b pb-2 mb-3">✏️ Modifier Article du Stock</h3>
+                <form id="form-modifier-stock" class="space-y-2.5">
+                    <input type="hidden" id="mod-stock-id">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Date d'Entrée</label>
+                        <input type="date" id="mod-stock-date" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Désignation Article</label>
+                        <input type="text" id="mod-stock-nom" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Quantité Disponible</label>
+                        <input type="number" id="mod-stock-qte" min="0" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Prix Vente Unitaire</label>
+                        <input type="number" step="0.01" id="mod-stock-pv" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                    </div>
+                    <div class="flex gap-2 pt-2">
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-xs font-extrabold shadow">Enregistrer Modifications</button>
+                        <button type="button" onclick="fermerModalStock()" class="w-full bg-slate-200 text-slate-800 py-2 rounded-xl text-xs font-bold">Annuler</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODALE MODIFIER / RETIRER ACOMPTE CLIENT -->
+        <div id="modal-acompte" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-50">
+            <div class="bg-white p-5 rounded-2xl max-w-sm w-full shadow-2xl relative border border-slate-200">
+                <h3 class="font-extrabold text-xs text-amber-800 uppercase border-b pb-2 mb-3">✏️ Modifier / Retirer Acompte Client</h3>
+                <form id="form-modifier-acompte" class="space-y-2.5">
+                    <input type="hidden" id="mod-acompte-id">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Date</label>
+                        <input type="date" id="mod-acompte-date" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Client</label>
+                        <input type="text" id="mod-acompte-client" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Marchandise</label>
+                        <input type="text" id="mod-acompte-article" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Qté Totale Payée</label>
+                        <input type="number" id="mod-acompte-qte-totale" min="1" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Qté Déjà Retirée</label>
+                        <input type="number" id="mod-acompte-qte-retiree" min="0" required class="w-full border rounded-xl p-2 text-xs bg-slate-50">
+                    </div>
+                    <div class="flex gap-2 pt-2">
+                        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-xl text-xs font-extrabold shadow">Mettre à Jour Fiche</button>
+                        <button type="button" onclick="fermerModalAcompte()" class="w-full bg-slate-200 text-slate-800 py-2 rounded-xl text-xs font-bold">Annuler</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- LOGIQUE JAVASCRIPT -->
+    <script>
+        const MOT_DE_PASSE_VALIDE = "@AHM";
+
+        document.getElementById('form-login').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const codeSaisi = document.getElementById('input-code').value.trim();
+
+            if (codeSaisi.toUpperCase() === MOT_DE_PASSE_VALIDE) {
+                document.getElementById('ecran-connexion').classList.add('hidden');
+                document.getElementById('app-contenu').classList.remove('hidden');
+                document.getElementById('msg-erreur-code').classList.add('hidden');
+                initialiserDates();
+                rafraichirInterface();
+            } else {
+                document.getElementById('msg-erreur-code').classList.remove('hidden');
+            }
+        });
+
+        function deconnexion() {
+            document.getElementById('input-code').value = '';
+            document.getElementById('app-contenu').classList.add('hidden');
+            document.getElementById('ecran-connexion').classList.remove('hidden');
+        }
+
+        let db = JSON.parse(localStorage.getItem('atendae_pro_v3_db')) || {
+            stock: [],
+            ventes: [],
+            acomptes: [],
+            caisse: []
+        };
+
+        function getDateAujourdhui() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function initialiserDates() {
+            const today = getDateAujourdhui();
+            document.getElementById('v-date').value = today;
+            document.getElementById('s-date').value = today;
+            document.getElementById('ac-date').value = today;
+            document.getElementById('c-date').value = today;
+        }
+
+        function sauvegarder() {
+            localStorage.setItem('atendae_pro_v3_db', JSON.stringify(db));
+            rafraichirInterface();
+        }
+
+        function changerOnglet(nomOnglet) {
+            document.querySelectorAll('.onglet-contenu').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(`onglet-${nomOnglet}`).classList.remove('hidden');
+            document.getElementById(`btn-tab-${nomOnglet}`).classList.add('active');
+        }
+
+        function calculerVente() {
+            const qte = parseFloat(document.getElementById('v-qte').value) || 0;
+            const pu = parseFloat(document.getElementById('v-pu').value) || 0;
+            const payeInput = document.getElementById('v-paye').value;
+
+            const total = qte * pu;
+            const paye = payeInput === '' ? total : parseFloat(payeInput) || 0;
+            const dette = total - paye;
+
+            document.getElementById('v-calc-total').innerText = total.toFixed(2);
+            document.getElementById('v-calc-dette').innerText = (dette > 0 ? dette : 0).toFixed(2);
+        }
+
+        function calculerAcompte() {
+            const tot = parseInt(document.getElementById('ac-qte-totale').value) || 0;
+            const ret = parseInt(document.getElementById('ac-qte-retiree').value) || 0;
+            document.getElementById('ac-calc-reste').innerText = (tot - ret) > 0 ? (tot - ret) : 0;
+        }
+
+        // VENTE ET FACTURE
+        document.getElementById('form-vente').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const dateVente = document.getElementById('v-date').value || getDateAujourdhui();
+            const art = document.getElementById('v-article').value.trim();
+            const qte = parseInt(document.getElementById('v-qte').value);
+            const pu = parseFloat(document.getElementById('v-pu').value);
+            const payeInput = document.getElementById('v-paye').value;
+            const client = document.getElementById('v-client').value.trim() || 'Client Cash';
+
+            const total = qte * pu;
+            const paye = payeInput === '' ? total : parseFloat(payeInput);
+            const dette = total - paye;
+
+            let st = db.stock.find(s => s.nom.toLowerCase() === art.toLowerCase());
+            if (st) st.qte -= qte;
+
+            const nouvelleVente = {
+                id: Date.now(),
+                date: dateVente,
+                article: art,
+                qte: qte,
+                pu: pu,
+                total: total,
+                paye: paye,
+                dette: dette > 0 ? dette : 0,
+                client: client
+            };
+
+            db.ventes.push(nouvelleVente);
+
+            document.getElementById('fact-num').innerText = nouvelleVente.id.toString().slice(-5);
+            document.getElementById('fact-date').innerText = dateVente;
+            document.getElementById('fact-client').innerText = client;
+            document.getElementById('fact-article').innerText = art;
+            document.getElementById('fact-qte').innerText = qte;
+            document.getElementById('fact-pu').innerText = pu.toFixed(2);
+            document.getElementById('fact-total').innerText = total.toFixed(2);
+            document.getElementById('fact-paye').innerText = paye.toFixed(2);
+            document.getElementById('fact-dette').innerText = (dette > 0 ? dette : 0).toFixed(2);
+
+            document.getElementById('modal-facture').classList.remove('hidden');
+
+            this.reset();
+            initialiserDates();
+            calculerVente();
+            sauvegarder();
+        });
+
+        function fermerFacture() {
+            document.getElementById('modal-facture').classList.add('hidden');
+        }
+
+        // MODIFIER DETTE
+        function ouvrirModalDette(venteId) {
+            const v = db.ventes.find(x => x.id === venteId);
+            if (!v) return;
+
+            document.getElementById('mod-dette-id').value = v.id;
+            document.getElementById('mod-dette-client').innerText = v.client;
+            document.getElementById('mod-dette-article').innerText = `${v.article} (${v.qte})`;
+            document.getElementById('mod-dette-actuelle').value = v.dette.toFixed(2);
+            document.getElementById('mod-dette-montant-paye').value = '';
+
+            document.getElementById('modal-dette').classList.remove('hidden');
+        }
+
+        function fermerModalDette() {
+            document.getElementById('modal-dette').classList.add('hidden');
+        }
+
+        document.getElementById('form-remboursement-dette').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const venteId = parseInt(document.getElementById('mod-dette-id').value);
+            const montantPaye = parseFloat(document.getElementById('mod-dette-montant-paye').value) || 0;
+
+            let v = db.ventes.find(x => x.id === venteId);
+            if (v) {
+                v.paye += montantPaye;
+                v.dette -= montantPaye;
+                if (v.dette <= 0) v.dette = 0;
+            }
+
+            fermerModalDette();
+            sauvegarder();
+        });
+
+        // MODIFIER STOCK
+        function ouvrirModalStock(stockId) {
+            const st = db.stock.find(x => x.id === stockId);
+            if (!st) return;
+
+            document.getElementById('mod-stock-id').value = st.id;
+            document.getElementById('mod-stock-date').value = st.date || getDateAujourdhui();
+            document.getElementById('mod-stock-nom').value = st.nom;
+            document.getElementById('mod-stock-qte').value = st.qte;
+            document.getElementById('mod-stock-pv').value = st.pv;
+
+            document.getElementById('modal-stock').classList.remove('hidden');
+        }
+
+        function fermerModalStock() {
+            document.getElementById('modal-stock').classList.add('hidden');
+        }
+
+        document.getElementById('form-modifier-stock').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('mod-stock-id').value);
+            let st = db.stock.find(x => x.id === id);
+            if (st) {
+                st.date = document.getElementById('mod-stock-date').value;
+                st.nom = document.getElementById('mod-stock-nom').value.trim();
+                st.qte = parseInt(document.getElementById('mod-stock-qte').value);
+                st.pv = parseFloat(document.getElementById('mod-stock-pv').value);
+            }
+            fermerModalStock();
+            sauvegarder();
+        });
+
+        // MODIFIER ACOMPTE
+        function ouvrirModalAcompte(acompteId) {
+            const a = db.acomptes.find(x => x.id === acompteId);
+            if (!a) return;
+
+            document.getElementById('mod-acompte-id').value = a.id;
+            document.getElementById('mod-acompte-date').value = a.date || getDateAujourdhui();
+            document.getElementById('mod-acompte-client').value = a.client;
+            document.getElementById('mod-acompte-article').value = a.article;
+            document.getElementById('mod-acompte-qte-totale').value = a.qteTotale;
+            document.getElementById('mod-acompte-qte-retiree').value = a.qteRetiree;
+
+            document.getElementById('modal-acompte').classList.remove('hidden');
+        }
+
+        function fermerModalAcompte() {
+            document.getElementById('modal-acompte').classList.add('hidden');
+        }
+
+        document.getElementById('form-modifier-acompte').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('mod-acompte-id').value);
+            let a = db.acomptes.find(x => x.id === id);
+            if (a) {
+                a.date = document.getElementById('mod-acompte-date').value;
+                a.client = document.getElementById('mod-acompte-client').value.trim();
+                a.article = document.getElementById('mod-acompte-article').value.trim();
+                a.qteTotale = parseInt(document.getElementById('mod-acompte-qte-totale').value);
+                a.qteRetiree = parseInt(document.getElementById('mod-acompte-qte-retiree').value);
+                a.reste = (a.qteTotale - a.qteRetiree) > 0 ? (a.qteTotale - a.qteRetiree) : 0;
+            }
+            fermerModalAcompte();
+            sauvegarder();
+        });
+
+        // FORMULAIRES DE BASE
+        document.getElementById('form-stock').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const dateStock = document.getElementById('s-date').value || getDateAujourdhui();
+            const nom = document.getElementById('s-nom').value.trim();
+            const qte = parseInt(document.getElementById('s-qte').value);
+            const pv = parseFloat(document.getElementById('s-pv').value);
+
+            let st = db.stock.find(s => s.nom.toLowerCase() === nom.toLowerCase());
+            if (st) {
+                st.qte += qte;
+                st.pv = pv;
+                st.date = dateStock;
+            } else {
+                db.stock.push({ id: Date.now(), date: dateStock, nom: nom, qte: qte, pv: pv });
+            }
+
+            this.reset();
+            initialiserDates();
+            sauvegarder();
+        });
+
+        document.getElementById('form-acompte').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const dateAcompte = document.getElementById('ac-date').value || getDateAujourdhui();
+            const client = document.getElementById('ac-client').value.trim();
+            const article = document.getElementById('ac-article').value.trim();
+            const qteTotale = parseInt(document.getElementById('ac-qte-totale').value);
+            const qteRetiree = parseInt(document.getElementById('ac-qte-retiree').value) || 0;
+
+            db.acomptes.push({
+                id: Date.now(),
+                date: dateAcompte,
+                client: client,
+                article: article,
+                qteTotale: qteTotale,
+                qteRetiree: qteRetiree,
+                reste: (qteTotale - qteRetiree) > 0 ? (qteTotale - qteRetiree) : 0
+            });
+
+            this.reset();
+            initialiserDates();
+            calculerAcompte();
+            sauvegarder();
+        });
+
+        document.getElementById('form-caisse').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const dateCaisse = document.getElementById('c-date').value || getDateAujourdhui();
+            db.caisse.push({
+                id: Date.now(),
+                date: dateCaisse,
+                type: document.getElementById('c-type').value,
+                montant: parseFloat(document.getElementById('c-montant').value),
+                motif: document.getElementById('c-motif').value.trim()
+            });
+            this.reset();
+            initialiserDates();
+            sauvegarder();
+        });
+
+        function supprimer(tableau, id) {
+            if (confirm("Voulez-vous supprimer cet enregistrement ?")) {
+                db[tableau] = db[tableau].filter(x => x.id !== id);
+                sauvegarder();
+            }
+        }
+
+        function filtrerTableaux() {
+            const filtre = document.getElementById('filtre-recherche').value.toLowerCase();
+            document.querySelectorAll('tbody tr').forEach(tr => {
+                const texte = tr.innerText.toLowerCase();
+                tr.style.display = texte.includes(filtre) ? '' : 'none';
+            });
+        }
+
+        function exporterDonnees() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `Sauvegarde_AMH_${getDateAujourdhui()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function rafraichirInterface() {
+            // Ventes
+            let htmlV = '';
+            let totalVentesVal = 0;
+            let totalPayeVentes = 0;
+            let totalDettes = 0;
+
+            db.ventes.forEach(v => {
+                totalVentesVal += v.total;
+                totalPayeVentes += v.paye;
+                totalDettes += v.dette;
+                htmlV += `<tr>
+                    <td class="p-2.5 text-slate-500 text-xs">${v.date || '-'}</td>
+                    <td class="p-2.5 font-bold text-slate-800">${v.article}</td>
+                    <td class="p-2.5">${v.qte}</td>
+                    <td class="p-2.5">${v.pu.toFixed(2)}</td>
+                    <td class="p-2.5 font-bold">${v.total.toFixed(2)}</td>
+                    <td class="p-2.5 text-emerald-600 font-bold">${v.paye.toFixed(2)}</td>
+                    <td class="p-2.5 ${v.dette > 0 ? 'text-rose-600 font-bold' : ''}">${v.dette.toFixed(2)}</td>
+                    <td class="p-2.5 font-medium">${v.client}</td>
+                    <td class="p-2.5 text-right"><button onclick="supprimer('ventes', ${v.id})" class="text-rose-500 hover:underline text-xs font-bold">Supprimer</button></td>
+                </tr>`;
+            });
+            document.getElementById('table-ventes').innerHTML = htmlV || '<tr><td colspan="9" class="p-3 text-center text-slate-400">Aucune vente enregistrée</td></tr>';
+
+            // Dettes
+            let htmlDettes = '';
+            let clientsDette = db.ventes.filter(v => v.dette > 0);
+            clientsDette.forEach(v => {
+                htmlDettes += `<tr>
+                    <td class="p-2.5 text-slate-500 text-xs">${v.date || '-'}</td>
+                    <td class="p-2.5 font-black text-rose-700">${v.client}</td>
+                    <td class="p-2.5 font-medium">${v.article} (${v.qte})</td>
+                    <td class="p-2.5 font-bold">${v.total.toFixed(2)}</td>
+                    <td class="p-2.5 text-emerald-600 font-bold">${v.paye.toFixed(2)}</td>
+                    <td class="p-2.5 font-black text-rose-600">${v.dette.toFixed(2)}</td>
+                    <td class="p-2.5 text-right flex justify-end gap-2">
+                        <button onclick="ouvrirModalDette(${v.id})" class="bg-amber-500 hover:bg-amber-600 text-slate-900 px-2 py-0.5 rounded-lg text-[10px] font-extrabold shadow">✏️ Modifier / Payer</button>
+                        <button onclick="supprimer('ventes', ${v.id})" class="text-rose-500 hover:underline text-xs font-bold">Effacer</button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('table-dettes').innerHTML = htmlDettes || '<tr><td colspan="7" class="p-3 text-center text-slate-400">Aucune dette client en cours</td></tr>';
+            document.getElementById('badge-total-dettes').innerText = totalDettes.toFixed(2);
+
+            // Stock
+            let htmlS = '';
+            let alerteStock = false;
+            let valeurStockTotal = 0;
+            let nbAlertes = 0;
+            let htmlDashAlertes = '';
+
+            db.stock.forEach(s => {
+                let val = s.qte * s.pv;
+                valeurStockTotal += val;
+                let alerte = s.qte < 5;
+                if (alerte) {
+                    alerteStock = true;
+                    nbAlertes++;
+                    htmlDashAlertes += `<div class="p-2 bg-rose-50 border border-rose-200 rounded-xl flex justify-between items-center">
+                        <span class="font-bold text-rose-900">${s.nom}</span>
+                        <span class="bg-rose-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black">Reste: ${s.qte}</span>
+                    </div>`;
+                }
+
+                htmlS += `<tr class="${alerte ? 'bg-rose-50' : ''}">
+                    <td class="p-2.5 text-slate-500 text-xs">${s.date || '-'}</td>
+                    <td class="p-2.5 font-bold text-slate-800">${s.nom}</td>
+                    <td class="p-2.5 font-black ${alerte ? 'text-rose-600' : 'text-slate-800'}">${s.qte}</td>
+                    <td class="p-2.5">${s.pv.toFixed(2)}</td>
+                    <td class="p-2.5 font-bold">${val.toFixed(2)}</td>
+                    <td class="p-2.5">${alerte ? '<span class="bg-rose-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">Rupture Proche</span>' : '<span class="text-emerald-600 text-xs font-bold">En Stock</span>'}</td>
+                    <td class="p-2.5 text-right flex justify-end gap-2">
+                        <button onclick="ouvrirModalStock(${s.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-0.5 rounded-lg text-[10px] font-extrabold shadow">✏️ Modifier</button>
+                        <button onclick="supprimer('stock', ${s.id})" class="text-rose-500 hover:underline text-xs font-bold">Supprimer</button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('table-stock').innerHTML = htmlS || '<tr><td colspan="7" class="p-3 text-center text-slate-400">Aucun article en stock</td></tr>';
+            document.getElementById('zone-alerte-stock').classList.toggle('hidden', !alerteStock);
+
+            // Acomptes
+            let htmlA = '';
+            let htmlRapAcomptes = '';
+            db.acomptes.forEach(a => {
+                htmlA += `<tr>
+                    <td class="p-2.5 text-slate-500 text-xs">${a.date || '-'}</td>
+                    <td class="p-2.5 font-bold text-slate-800">${a.client}</td>
+                    <td class="p-2.5 font-medium">${a.article}</td>
+                    <td class="p-2.5 font-bold">${a.qteTotale}</td>
+                    <td class="p-2.5 text-emerald-600 font-bold">${a.qteRetiree}</td>
+                    <td class="p-2.5 font-black text-amber-600">${a.reste}</td>
+                    <td class="p-2.5 text-right flex justify-end gap-2">
+                        <button onclick="ouvrirModalAcompte(${a.id})" class="bg-amber-500 hover:bg-amber-600 text-slate-900 px-2 py-0.5 rounded-lg text-[10px] font-extrabold shadow">✏️ Modifier / Retirer</button>
+                        <button onclick="supprimer('acomptes', ${a.id})" class="text-rose-500 hover:underline text-xs font-bold">Supprimer</button>
+                    </td>
+                </tr>`;
+
+                htmlRapAcomptes += `<p class="py-1 border-b border-slate-200">• [${a.date || '-'}] <strong>${a.client}</strong> - Article: ${a.article} (Reste à retirer: <span class="text-amber-700 font-bold">${a.reste}</span> / ${a.qteTotale})</p>`;
+            });
+            document.getElementById('table-acomptes').innerHTML = htmlA || '<tr><td colspan="7" class="p-3 text-center text-slate-400">Aucun acompte</td></tr>';
+            document.getElementById('rap-zone-acomptes').innerHTML = htmlRapAcomptes || '<p class="text-slate-400">Aucun acompte ou retrait en cours.</p>';
+
+            // Caisse
+            let htmlC = '';
+            let totalEntrees = 0;
+            let totalSorties = 0;
+
+            db.caisse.forEach(c => {
+                if (c.type === 'Entree') totalEntrees += c.montant;
+                if (c.type === 'Sortie') totalSorties += c.montant;
+
+                htmlC += `<tr>
+                    <td class="p-2.5 text-slate-500 text-xs">${c.date || '-'}</td>
+                    <td class="p-2.5 font-bold ${c.type === 'Entree' ? 'text-emerald-600' : 'text-rose-600'}">${c.type}</td>
+                    <td class="p-2.5 font-medium">${c.motif}</td>
+                    <td class="p-2.5 font-bold">${c.montant.toFixed(2)}</td>
+                    <td class="p-2.5 text-right"><button onclick="supprimer('caisse', ${c.id})" class="text-rose-500 hover:underline text-xs font-bold">Supprimer</button></td>
+                </tr>`;
+            });
+            document.getElementById('table-caisse').innerHTML = htmlC || '<tr><td colspan="5" class="p-3 text-center text-slate-400">Aucune dépense</td></tr>';
+
+            // Rapport Global & Tableau de bord
+            let caisseNet = (totalPayeVentes + totalEntrees) - totalSorties;
+
+            document.getElementById('header-caisse').innerText = caisseNet.toFixed(2);
+            document.getElementById('rap-ventes').innerText = totalPayeVentes.toFixed(2);
+            document.getElementById('rap-entrees').innerText = totalEntrees.toFixed(2);
+            document.getElementById('rap-sorties').innerText = totalSorties.toFixed(2);
+            document.getElementById('rap-dettes').innerText = totalDettes.toFixed(2);
+            document.getElementById('rap-solde-net').innerText = caisseNet.toFixed(2);
+
+            // Remplissage Tableau de Bord (Dashboard)
+            document.getElementById('dash-caisse').innerText = caisseNet.toFixed(2);
+            document.getElementById('dash-ventes-total').innerText = totalVentesVal.toFixed(2);
+            document.getElementById('dash-ventes-cash').innerText = totalPayeVentes.toFixed(2);
+            document.getElementById('dash-dettes').innerText = totalDettes.toFixed(2);
+            document.getElementById('dash-nb-dettes').innerText = clientsDette.length;
+            document.getElementById('dash-valeur-stock').innerText = valeurStockTotal.toFixed(2);
+            document.getElementById('dash-nb-alertes').innerText = nbAlertes;
+
+            // Remplissage dernières ventes Dashboard
+            let htmlDashVentes = '';
+            db.ventes.slice(-4).reverse().forEach(v => {
+                htmlDashVentes += `<div class="p-2 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center">
+                    <div>
+                        <strong class="text-slate-800">${v.article}</strong> (${v.qte}) - <span class="text-slate-500">${v.client}</span>
+                    </div>
+                    <span class="font-extrabold text-emerald-600">${v.total.toFixed(2)}</span>
+                </div>`;
+            });
+            document.getElementById('dash-recent-ventes').innerHTML = htmlDashVentes || '<p class="text-slate-400 text-center">Aucune vente récente</p>';
+            document.getElementById('dash-recent-alertes').innerHTML = htmlDashAlertes || '<p class="text-emerald-600 text-center font-bold">✅ Aucun article en rupture proche</p>';
+        }
+    </script>
+</body>
+</html>
